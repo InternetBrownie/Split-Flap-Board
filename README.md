@@ -4,6 +4,7 @@
 
 
 A virtual replica of a split-flap board, like the ones you might know from airports or train stations. Beautifully recreated with skeuomorphic design elements.
+Including proper character sequenz and realistic flip sound.
 
 
 

@@ -24,3 +24,10 @@ Including proper character sequenz and realistic flip sound.
 
 **Custom Messages** for your thoughts.
 
+
+
+**Fullscreen** for the full experience. And of course: *Safe for **OLED*** thanks to integrated mechanism.
+
+
+
+**Dark/Light Mode**

@@ -7,7 +7,7 @@ A virtual replica of a split-flap board, like the ones you might know from airpo
 Including proper character sequenz and realistic flip sound.
 
 
-
+![Preview](screenshot.png)
 
 
 ##### *Features:*

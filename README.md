@@ -30,4 +30,4 @@ Including proper character sequenz and realistic flip sound.
 
 
 
-**Dark/Light Mode**
+**Dark/Light Mode** - adaptive.

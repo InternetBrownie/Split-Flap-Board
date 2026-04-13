@@ -124,6 +124,8 @@ const UI_STRINGS = {
     notSet: 'NICHT GESETZT',
     help: 'Hilfe',
     helpOpen: 'Hilfe öffnen',
+    fullscreenOpen: 'Vollbild öffnen',
+    fullscreenClose: 'Vollbild schließen',
     helpWeatherTitle: 'Wetter:',
     helpWeatherBody: 'Open-Meteo. Für Ortssuche und Ortsauflösung nutzt die App Open-Meteo Geocoding sowie Nominatim / OpenStreetMap.',
     helpFullscreenTitle: 'Vollbild:',
@@ -180,6 +182,8 @@ const UI_STRINGS = {
     notSet: 'NOT SET',
     help: 'Help',
     helpOpen: 'Open help',
+    fullscreenOpen: 'Open fullscreen',
+    fullscreenClose: 'Close fullscreen',
     helpWeatherTitle: 'Weather:',
     helpWeatherBody: 'Open-Meteo powers weather, place search, and reverse geocoding with Nominatim / OpenStreetMap.',
     helpFullscreenTitle: 'Fullscreen:',
@@ -1637,32 +1641,153 @@ function createHelpController() {
 }
 
 function createFullscreenController() {
+  let fallbackActive = false;
+
+  function applyFallback(active) {
+    fallbackActive = active;
+    document.documentElement.classList.toggle('mobile-fullscreen', active);
+  }
+
+  async function lockLandscape() {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('landscape').catch(() => {});
+    }
+  }
+
+  async function unlockLandscape() {
+    if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+      screen.orientation.unlock();
+    }
+  }
+
   async function enter() {
     const target = el('boardSection');
-    if (!target || !target.requestFullscreen) {
-      return;
+    if (!target) {
+      return false;
     }
 
-    await target.requestFullscreen().catch(() => {});
+    const requestFullscreen =
+      target.requestFullscreen ||
+      target.webkitRequestFullscreen ||
+      target.msRequestFullscreen;
+
+    if (requestFullscreen) {
+      const result = requestFullscreen.call(target);
+      if (result && typeof result.catch === 'function') {
+        await result.catch(() => {});
+      }
+      await lockLandscape();
+      return true;
+    }
+
+    applyFallback(true);
+    await lockLandscape();
+    return true;
   }
 
   async function exit() {
+    if (fallbackActive) {
+      applyFallback(false);
+      await unlockLandscape();
+      return;
+    }
+
     if (!document.fullscreenElement) {
       return;
     }
 
     await document.exitFullscreen().catch(() => {});
+    await unlockLandscape();
   }
 
   return {
     async toggle() {
-      if (document.fullscreenElement) {
+      if (document.fullscreenElement || fallbackActive) {
         await exit();
         return;
       }
       await enter();
     },
     exit,
+    get active() {
+      return fallbackActive || Boolean(document.fullscreenElement);
+    },
+  };
+}
+
+function createBoardViewportController(fullscreen) {
+  let resizeHandler = null;
+  let orientationHandler = null;
+
+  function getAvailableSpace() {
+    const section = el('boardSection');
+    const shell = section ? section.querySelector('.board-shell') : null;
+    if (!section || !shell) {
+      return null;
+    }
+
+    const sectionRect = section.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    const style = window.getComputedStyle(section);
+    const paddingX = parseFloat(style.paddingLeft || '0') + parseFloat(style.paddingRight || '0');
+    const paddingY = parseFloat(style.paddingTop || '0') + parseFloat(style.paddingBottom || '0');
+
+    let availableWidth = Math.max(0, sectionRect.width - paddingX);
+    let availableHeight = Math.max(0, sectionRect.height - paddingY);
+
+    if (!fullscreen.active) {
+      const header = document.querySelector('.header');
+      const overlay = el('controlsOverlay');
+      if (header) {
+        availableHeight = Math.min(availableHeight, window.innerHeight - header.getBoundingClientRect().height - 24);
+      }
+      if (overlay && overlay.classList.contains('open')) {
+        availableHeight = Math.min(availableHeight, window.innerHeight * 0.56);
+      }
+    }
+
+    return {
+      availableWidth,
+      availableHeight,
+      contentWidth: shellRect.width,
+      contentHeight: shellRect.height,
+      section,
+    };
+  }
+
+  function fit() {
+    const motion = document.querySelector('.board-motion');
+    if (!motion) {
+      return;
+    }
+
+    motion.style.setProperty('--board-scale', '1');
+
+    const space = getAvailableSpace();
+    if (!space || !space.contentWidth || !space.contentHeight) {
+      return;
+    }
+
+    const widthScale = space.availableWidth / space.contentWidth;
+    const heightScale = space.availableHeight / space.contentHeight;
+    const scale = Math.min(1, widthScale, heightScale);
+    motion.style.setProperty('--board-scale', String(Math.max(0.38, scale)));
+  }
+
+  function boot() {
+    resizeHandler = () => fit();
+    orientationHandler = () => window.setTimeout(fit, 120);
+    window.addEventListener('resize', resizeHandler);
+    window.addEventListener('orientationchange', orientationHandler);
+    document.addEventListener('fullscreenchange', () => window.setTimeout(fit, 120));
+    fit();
+    window.setTimeout(fit, 60);
+    window.setTimeout(fit, 260);
+  }
+
+  return {
+    boot,
+    fit,
   };
 }
 
@@ -2041,6 +2166,7 @@ function createApp(config) {
   const controlsOverlay = createControlsOverlayController(state);
   const help = createHelpController();
   const fullscreen = createFullscreenController();
+  const viewport = createBoardViewportController(fullscreen);
   const oledProtection = createOledProtectionController();
   const historyStore = createHistoryStore();
   const history = createHistoryController(historyStore, state);
@@ -2049,10 +2175,12 @@ function createApp(config) {
   async function refreshCurrentView() {
     if (state.activePreset === 'custom' && state.customText) {
       await board.setAllText(state.customText);
+      viewport.fit();
       return;
     }
 
     clock.refresh();
+    viewport.fit();
   }
 
   function updateCustomInputMeta() {
@@ -2149,6 +2277,12 @@ function createApp(config) {
       helpFab.setAttribute('title', t(state.language, 'help'));
     }
 
+    const fullscreenButton = el('fullscreenBtn');
+    if (fullscreenButton) {
+      fullscreenButton.setAttribute('aria-label', fullscreen.active ? t(state.language, 'fullscreenClose') : t(state.language, 'fullscreenOpen'));
+      fullscreenButton.setAttribute('title', fullscreen.active ? t(state.language, 'fullscreenClose') : t(state.language, 'fullscreenOpen'));
+    }
+
     presets.renderLabels();
   }
 
@@ -2162,8 +2296,15 @@ function createApp(config) {
     await weather.syncLanguage();
     await dualTime.syncLanguage();
     await refreshCurrentView();
+    viewport.fit();
     history.render('custom', submitCustomTextFromHistory);
     history.render('dual', runDualLocationSearchFromHistory);
+  }
+
+  async function toggleFullscreenView() {
+    await fullscreen.toggle();
+    renderLanguageUi();
+    window.setTimeout(() => viewport.fit(), 180);
   }
 
   function renderUiState() {
@@ -2224,12 +2365,15 @@ function createApp(config) {
 
       if (event.key === 'f' || event.key === 'F') {
         event.preventDefault();
-        fullscreen.toggle();
+        toggleFullscreenView();
         return;
       }
 
-      if (event.key === 'Escape' && document.fullscreenElement) {
-        fullscreen.exit();
+      if (event.key === 'Escape' && fullscreen.active) {
+        fullscreen.exit().then(() => {
+          renderLanguageUi();
+          window.setTimeout(() => viewport.fit(), 180);
+        });
         return;
       }
 
@@ -2253,8 +2397,17 @@ function createApp(config) {
       await applyLanguage(state.language === 'de' ? 'en' : 'de');
     });
     el('themeBtn').addEventListener('click', () => theme.toggle());
-    el('controlsToggle').addEventListener('click', () => controlsOverlay.toggle());
-    el('controlsCollapse').addEventListener('click', () => controlsOverlay.close());
+    el('fullscreenBtn').addEventListener('click', () => {
+      toggleFullscreenView();
+    });
+    el('controlsToggle').addEventListener('click', () => {
+      controlsOverlay.toggle();
+      window.setTimeout(() => viewport.fit(), 320);
+    });
+    el('controlsCollapse').addEventListener('click', () => {
+      controlsOverlay.close();
+      window.setTimeout(() => viewport.fit(), 180);
+    });
     el('helpFab').addEventListener('click', event => {
       event.stopPropagation();
       help.toggle();
@@ -2468,6 +2621,7 @@ function createApp(config) {
     presets.init();
     presets.setOnChange(() => {
       dualTime.renderState();
+      viewport.fit();
     });
     weather.renderLocationStatus(config.defaultLocationName);
     dualTime.renderLocationStatus(t(state.language, 'notSet'));
@@ -2485,6 +2639,7 @@ function createApp(config) {
     updateCustomInputMeta();
     bindEvents();
     exposeApi();
+    viewport.boot();
     oledProtection.boot();
     window.setTimeout(() => {
       presets.runPreset('clock');

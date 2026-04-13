@@ -266,7 +266,9 @@ button {
 
 .board-motion {
   width: fit-content;
-  transform: translate3d(var(--burn-x), var(--burn-y), 0);
+  max-width: 100%;
+  transform: translate3d(var(--burn-x), var(--burn-y), 0) scale(var(--board-scale, 1));
+  transform-origin: center center;
   transition: transform 1400ms ease-in-out;
   will-change: transform;
 }
@@ -422,6 +424,7 @@ button {
   position: relative;
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 
 .board {
@@ -436,13 +439,10 @@ button {
 }
 
 #boardSection:fullscreen {
-  --tile-w: min(calc((100vw - 260px) / 23.6), calc((100vh - 260px) / 9.35), 72px);
-  --tile-h: calc(var(--tile-w) * 1.4);
-  --tile-gap: max(2px, min(calc(var(--tile-w) * 0.07), 5px));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 20px;
   margin: 0;
   width: 100vw;
   height: 100vh;
@@ -463,7 +463,7 @@ button {
 
 #boardSection:fullscreen .board-motion {
   width: fit-content;
-  max-width: calc(100vw - 120px);
+  max-width: calc(100vw - 32px);
 }
 
 #boardSection:fullscreen .controls-overlay {
@@ -479,7 +479,59 @@ button {
   padding: max(10px, min(calc(var(--tile-w) * 0.16), 16px));
   border-radius: 18px;
   box-shadow: none;
-  max-width: calc(100vw - 160px);
+  max-width: none;
+}
+
+html.mobile-fullscreen,
+html.mobile-fullscreen body {
+  height: 100%;
+  overflow: hidden;
+  background: #050505;
+}
+
+html.mobile-fullscreen body {
+  padding: 0;
+}
+
+html.mobile-fullscreen .page-frame {
+  width: 100vw;
+  max-width: none;
+  min-height: 100svh;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html.mobile-fullscreen .header,
+html.mobile-fullscreen .controls-overlay,
+html.mobile-fullscreen .help-fab,
+html.mobile-fullscreen .help-panel {
+  display: none !important;
+}
+
+html.mobile-fullscreen .board-section {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #050505;
+  z-index: 1000;
+}
+
+html.mobile-fullscreen .board-shell {
+  max-width: calc(100vw - 32px);
+}
+
+html.mobile-fullscreen .board-motion {
+  max-width: calc(100vw - 32px);
+}
+
+html.mobile-fullscreen .controls-toggle {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .board-grid {
@@ -1155,12 +1207,20 @@ html:not(.light) .location-chip {
     align-items: center;
   }
 
+  .board-section {
+    padding: 14px;
+  }
+
+  .board-shell {
+    padding: 10px;
+  }
+
 }
 
 @media (max-width: 640px) {
   :root {
-    --tile-w: 28px;
-    --tile-h: 42px;
+    --tile-w: 50px;
+    --tile-h: 70px;
     --tile-gap: 2px;
   }
 
@@ -1210,6 +1270,47 @@ html:not(.light) .location-chip {
   .toggle-group .ctrl-btn {
     flex: 1;
   }
+
+  .board-section {
+    padding: 12px 10px 14px;
+  }
+
+  .board-shell {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  body {
+    padding: 0;
+  }
+
+  .page-frame {
+    min-height: 100svh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .header {
+    padding: 10px 14px;
+  }
+
+  .header-logo {
+    font-size: 17px;
+  }
+
+  .board-section {
+    padding: 10px;
+  }
+
+  .board-shell {
+    padding: 8px;
+  }
+
+  .controls-overlay {
+    width: min(calc(100% - 12px), calc((22 * var(--tile-w)) + (21 * var(--tile-gap)) + 16px));
+  }
 }
 </style>
 </head>
@@ -1221,6 +1322,7 @@ html:not(.light) .location-chip {
         <span class="header-nav-copy" id="headerNavCopy">Retro Split-Flap Dashboard</span>
         <button class="theme-btn" id="languageBtn" aria-label="Sprache auf Deutsch stellen" title="Sprache auf Deutsch stellen">DE</button>
         <button class="theme-btn" id="themeBtn" aria-label="Dark mode active" title="Dark mode active">&#9789;</button>
+        <button class="theme-btn" id="fullscreenBtn" aria-label="Open fullscreen" title="Open fullscreen">&#9974;</button>
       </div>
     </header>
     <section class="board-section" id="boardSection">

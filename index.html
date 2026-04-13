@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1160,17 +1160,18 @@ html:not(.light) .location-chip {
 <body>
   <div class="page-frame">
     <header class="header">
-      <div class="header-logo" id="greetingTitle">Guten Morgen.</div>
+      <div class="header-logo" id="greetingTitle">Good morning.</div>
       <div class="header-nav">
-        <span class="header-nav-copy">Retro Split-Flap Dashboard</span>
-        <button class="theme-btn" id="themeBtn" aria-label="Dark Mode aktiv" title="Dark Mode aktiv">&#9789;</button>
+        <span class="header-nav-copy" id="headerNavCopy">Retro Split-Flap Dashboard</span>
+        <button class="theme-btn" id="languageBtn" aria-label="Sprache auf Deutsch stellen" title="Sprache auf Deutsch stellen">DE</button>
+        <button class="theme-btn" id="themeBtn" aria-label="Dark mode active" title="Dark mode active">&#9789;</button>
       </div>
     </header>
     <section class="board-section" id="boardSection">
       <div class="board-motion">
         <div class="board-shell">
           <div class="board-topbar">
-            <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="controlsOverlay" title="Steuerung einblenden"></button>
+            <button class="controls-toggle" id="controlsToggle" type="button" aria-expanded="false" aria-controls="controlsOverlay" title="Show controls"></button>
             <div class="status-bar">
               <div class="status-dot" id="statusDot"></div>
             </div>
@@ -1188,63 +1189,63 @@ html:not(.light) .location-chip {
           <div class="controls-panel">
             <div class="control-grid">
               <article class="control-card">
-                <h2>Board steuern</h2>
+                <h2 id="boardControlsTitle">Board controls</h2>
                 <div class="control-stack">
                   <div class="presets panel-row" id="presets"></div>
                   <div class="panel-row input-row">
-                    <input class="text-input" id="customInput" type="text" maxlength="220" placeholder="Eigenen Text eingeben ...">
-                    <button class="submit-btn" id="submitBtn">Setzen</button>
+                    <input class="text-input" id="customInput" type="text" maxlength="220" placeholder="Enter custom text ...">
+                    <button class="submit-btn" id="submitBtn">Set</button>
                   </div>
-                  <div class="input-meta" id="customInputMeta">Rest: 132</div>
+                  <div class="input-meta" id="customInputMeta">Left: 132</div>
                   <div class="history-row" id="customHistory" aria-live="polite"></div>
                 </div>
               </article>
 
               <article class="control-card">
-                <h2>Anzeige</h2>
+                <h2 id="displayTitle">Display</h2>
                 <div class="control-stack">
                   <div class="panel-row">
-                    <span class="panel-label">Sekunden</span>
+                    <span class="panel-label" id="secondsLabel">Seconds</span>
                     <div class="toggle-group">
-                      <button class="ctrl-btn" id="secOn">Ein</button>
-                      <button class="ctrl-btn active" id="secOff">Aus</button>
+                      <button class="ctrl-btn" id="secOn">On</button>
+                      <button class="ctrl-btn active" id="secOff">Off</button>
                     </div>
                   </div>
                   <div class="panel-row">
-                    <span class="panel-label">Sound</span>
+                    <span class="panel-label" id="soundLabel">Sound</span>
                     <div class="toggle-group">
-                      <button class="ctrl-btn active" id="soundOn">Ein</button>
-                      <button class="ctrl-btn" id="soundOff">Aus</button>
+                      <button class="ctrl-btn active" id="soundOn">On</button>
+                      <button class="ctrl-btn" id="soundOff">Off</button>
                     </div>
                   </div>
                   <div class="panel-row">
-                    <span class="panel-label">Ausrichtung</span>
+                    <span class="panel-label" id="alignmentLabel">Alignment</span>
                     <div class="toggle-group">
-                      <button class="ctrl-btn" id="alignLeft">Links</button>
-                      <button class="ctrl-btn active" id="alignCenter">Mitte</button>
+                      <button class="ctrl-btn" id="alignLeft">Left</button>
+                      <button class="ctrl-btn active" id="alignCenter">Center</button>
                     </div>
                   </div>
                 </div>
               </article>
 
               <article class="control-card">
-                <h2>Wetter</h2>
+                <h2 id="weatherTitle">Weather</h2>
                 <div class="control-stack">
                   <div class="panel-row">
-                    <span class="panel-label">Wetter</span>
+                    <span class="panel-label" id="weatherToggleLabel">Weather</span>
                     <div class="toggle-group">
-                      <button class="ctrl-btn active" id="weatherOn">Ein</button>
-                      <button class="ctrl-btn" id="weatherOff">Aus</button>
+                      <button class="ctrl-btn active" id="weatherOn">On</button>
+                      <button class="ctrl-btn" id="weatherOff">Off</button>
                     </div>
                   </div>
                   <div class="panel-row input-row">
-                    <span class="panel-label">Standort</span>
-                    <input class="text-input" id="locationInput" type="text" maxlength="60" placeholder="z.B. Berlin, Paris, Tokyo ...">
-                    <button class="submit-btn" id="locationBtn">Suchen</button>
+                    <span class="panel-label" id="locationLabel">Location</span>
+                    <input class="text-input" id="locationInput" type="text" maxlength="60" placeholder="e.g. Berlin, Paris, Tokyo ...">
+                    <button class="submit-btn" id="locationBtn">Search</button>
                   </div>
                   <div class="panel-row panel-row-offset">
                     <div class="location-chip" id="weatherLocationStatus" aria-live="polite">
-                      <span class="location-chip-label">Aktuell</span>
+                      <span class="location-chip-label" id="weatherLocationChipLabel">Current</span>
                       <span class="location-chip-value" id="weatherLocationValue">DILLENBURG</span>
                     </div>
                   </div>
@@ -1252,24 +1253,24 @@ html:not(.light) .location-chip {
               </article>
 
               <article class="control-card">
-                <h2>Dual-Time</h2>
+                <h2 id="dualTimeTitle">Dual Time</h2>
                 <div class="control-stack">
                   <div class="panel-row">
-                    <span class="panel-label">Dual-Time</span>
+                    <span class="panel-label" id="dualTimeToggleLabel">Dual Time</span>
                     <div class="toggle-group">
-                      <button class="ctrl-btn" id="dualOn">Ein</button>
-                      <button class="ctrl-btn active" id="dualOff">Aus</button>
+                      <button class="ctrl-btn" id="dualOn">On</button>
+                      <button class="ctrl-btn active" id="dualOff">Off</button>
                     </div>
                   </div>
                   <div class="panel-row input-row">
-                    <span class="panel-label">Ort</span>
-                    <input class="text-input" id="dualLocationInput" type="text" maxlength="60" placeholder="z.B. New York, Tokyo, Sydney ...">
-                    <button class="submit-btn" id="dualLocationBtn">Hinzufügen</button>
+                    <span class="panel-label" id="placeLabel">Place</span>
+                    <input class="text-input" id="dualLocationInput" type="text" maxlength="60" placeholder="e.g. New York, Tokyo, Sydney ...">
+                    <button class="submit-btn" id="dualLocationBtn">Add</button>
                   </div>
                   <div class="panel-row panel-row-offset">
                     <div class="location-chip" id="dualLocationStatus" aria-live="polite">
-                      <span class="location-chip-label">Zweitort</span>
-                      <span class="location-chip-value" id="dualLocationValue">NICHT GESETZT</span>
+                      <span class="location-chip-label" id="dualLocationChipLabel">Second place</span>
+                      <span class="location-chip-value" id="dualLocationValue">NOT SET</span>
                     </div>
                   </div>
                   <div class="history-row panel-row-offset" id="dualHistory" aria-live="polite"></div>
@@ -1277,18 +1278,18 @@ html:not(.light) .location-chip {
               </article>
             </div>
             <div class="controls-footer">
-              <button class="controls-collapse" id="controlsCollapse" type="button" aria-label="Steuerung schließen"></button>
+              <button class="controls-collapse" id="controlsCollapse" type="button" aria-label="Hide controls"></button>
             </div>
           </div>
         </div>
       </section>
     </section>
   </div>
-  <button class="help-fab" id="helpFab" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Hilfe öffnen" title="Hilfe">?</button>
+  <button class="help-fab" id="helpFab" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Open help" title="Help">?</button>
   <aside class="help-panel" id="helpPanel" aria-hidden="true">
-    <h2>Hilfe</h2>
-    <p><strong>Wetter:</strong> Open-Meteo. Für Ortssuche und Ortsauflösung nutzt die App Open-Meteo Geocoding sowie Nominatim / OpenStreetMap.</p>
-    <p><strong>Vollbild:</strong> Mit der Taste <strong>F</strong> startest und beendest du den Vollbildmodus.</p>
+    <h2 id="helpTitle">Help</h2>
+    <p><strong id="helpWeatherTitle">Weather:</strong> <span id="helpWeatherBody">Open-Meteo powers weather, place search, and reverse geocoding with Nominatim / OpenStreetMap.</span></p>
+    <p><strong id="helpFullscreenTitle">Fullscreen:</strong> <span id="helpFullscreenBody">Press F to enter or exit fullscreen mode.</span></p>
   </aside>
   <script src="./flipboard-flap-audio.js"></script>
   <script src="./flipboard-app.js"></script>

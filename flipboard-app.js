@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const FLIPBOARD_CONFIG = {
   charset: ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+/:.,!?%',
@@ -16,9 +16,9 @@ const FLIPBOARD_CONFIG = {
     locationMs: 30 * 1000,
   },
   presets: [
-    { label: 'Standard', action: 'clock' },
-    { label: 'Text', action: 'custom' },
-    { label: 'Clear', action: 'clear' },
+    { labelKey: 'presetClock', action: 'clock' },
+    { labelKey: 'presetCustom', action: 'custom' },
+    { labelKey: 'presetClear', action: 'clear' },
   ],
   hooks: {
     onFlipStart: null,
@@ -27,35 +27,221 @@ const FLIPBOARD_CONFIG = {
   },
 };
 
-const DAY_NAMES = ['SO', 'MO', 'DI', 'MI', 'DO', 'FR', 'SA'];
+const LANGUAGE_STORAGE_KEY = 'flipboard.language';
+const SUPPORTED_LANGUAGES = ['en', 'de'];
+const DAY_NAMES = {
+  de: ['SO', 'MO', 'DI', 'MI', 'DO', 'FR', 'SA'],
+  en: ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'],
+};
 const WEATHER_CODES = {
-  0: 'KLAR',
-  1: 'HEITER',
-  2: 'BEWOELKT',
-  3: 'BEDECKT',
-  45: 'NEBLIG',
-  48: 'REIFNEBEL',
-  51: 'NIESEL',
-  53: 'NIESEL',
-  55: 'STARKER NIESEL',
-  61: 'REGEN',
-  63: 'REGEN',
-  65: 'STARKER REGEN',
-  71: 'SCHNEE',
-  73: 'SCHNEE',
-  75: 'STARKER SCHNEE',
-  77: 'SCHNEEGRIESEL',
-  80: 'SCHAUER',
-  81: 'SCHAUER',
-  82: 'STARKER SCHAUER',
-  85: 'SCHNEESCHAUER',
-  86: 'STARKER SCHNEESCHAUER',
-  95: 'GEWITTER',
-  96: 'GEWITTER',
-  99: 'STARKES GEWITTER',
+  de: {
+    0: 'KLAR',
+    1: 'HEITER',
+    2: 'BEWOELKT',
+    3: 'BEDECKT',
+    45: 'NEBLIG',
+    48: 'REIFNEBEL',
+    51: 'NIESEL',
+    53: 'NIESEL',
+    55: 'STARKER NIESEL',
+    61: 'REGEN',
+    63: 'REGEN',
+    65: 'STARKER REGEN',
+    71: 'SCHNEE',
+    73: 'SCHNEE',
+    75: 'STARKER SCHNEE',
+    77: 'SCHNEEGRIESEL',
+    80: 'SCHAUER',
+    81: 'SCHAUER',
+    82: 'STARKER SCHAUER',
+    85: 'SCHNEESCHAUER',
+    86: 'STARKER SCHNEESCHAUER',
+    95: 'GEWITTER',
+    96: 'GEWITTER',
+    99: 'STARKES GEWITTER',
+  },
+  en: {
+    0: 'CLEAR',
+    1: 'FAIR',
+    2: 'CLOUDY',
+    3: 'OVERCAST',
+    45: 'FOG',
+    48: 'RIME FOG',
+    51: 'DRIZZLE',
+    53: 'DRIZZLE',
+    55: 'HVY DRIZZLE',
+    61: 'RAIN',
+    63: 'RAIN',
+    65: 'HVY RAIN',
+    71: 'SNOW',
+    73: 'SNOW',
+    75: 'HVY SNOW',
+    77: 'SNOW GRAINS',
+    80: 'SHOWERS',
+    81: 'SHOWERS',
+    82: 'HVY SHOWERS',
+    85: 'SNOW SHOWERS',
+    86: 'HVY SNOW SHWRS',
+    95: 'T STORM',
+    96: 'T STORM',
+    99: 'HVY T STORM',
+  },
+};
+const UI_STRINGS = {
+  de: {
+    appTitle: 'Daily Hub Board',
+    headerTagline: 'Retro Split-Flap Dashboard',
+    languageButton: 'DE',
+    languageLabel: 'Sprache auf Deutsch stellen',
+    themeLight: 'Light Mode aktiv',
+    themeDark: 'Dark Mode aktiv',
+    greetingMorning: 'Guten Morgen.',
+    greetingNoon: 'Guten Mittag.',
+    greetingEvening: 'Guten Abend.',
+    greetingNight: 'Gute Nacht.',
+    controlsShow: 'Steuerung einblenden',
+    controlsHide: 'Steuerung schließen',
+    boardControls: 'Board steuern',
+    display: 'Anzeige',
+    weather: 'Wetter',
+    dualTime: 'Dual-Time',
+    customPlaceholder: 'Eigenen Text eingeben ...',
+    submit: 'Setzen',
+    remaining: 'Rest',
+    seconds: 'Sekunden',
+    sound: 'Sound',
+    alignment: 'Ausrichtung',
+    left: 'Links',
+    center: 'Mitte',
+    on: 'Ein',
+    off: 'Aus',
+    location: 'Standort',
+    place: 'Ort',
+    search: 'Suchen',
+    add: 'Hinzufügen',
+    current: 'Aktuell',
+    secondPlace: 'Zweitort',
+    notSet: 'NICHT GESETZT',
+    help: 'Hilfe',
+    helpOpen: 'Hilfe öffnen',
+    helpWeatherTitle: 'Wetter:',
+    helpWeatherBody: 'Open-Meteo. Für Ortssuche und Ortsauflösung nutzt die App Open-Meteo Geocoding sowie Nominatim / OpenStreetMap.',
+    helpFullscreenTitle: 'Vollbild:',
+    helpFullscreenBody: 'Mit der Taste F startest und beendest du den Vollbildmodus.',
+    statusBusy: 'Flippt ...',
+    statusReady: 'Bereit',
+    presetClock: 'Standard',
+    presetCustom: 'Text',
+    presetClear: 'Clear',
+    locationUnknown: 'UNBEKANNT',
+    locationSearchPrefix: 'SUCHE',
+    weatherLoading: 'LADEN...',
+    weatherUnavailable: 'WETTER N/A',
+    weatherOff: 'WETTER AUS',
+    weatherLoadingBoard: 'WETTER LAEDT',
+    notFound: 'NICHT GEFUNDEN',
+    placeNotFoundError: 'Ort nicht gefunden',
+    removeEntry: 'Entfernen',
+    removeEntryAria: '{value} entfernen',
+  },
+  en: {
+    appTitle: 'Daily Hub Board',
+    headerTagline: 'Retro Split-Flap Dashboard',
+    languageButton: 'EN',
+    languageLabel: 'Switch language to English',
+    themeLight: 'Light mode active',
+    themeDark: 'Dark mode active',
+    greetingMorning: 'Good morning.',
+    greetingNoon: 'Good afternoon.',
+    greetingEvening: 'Good evening.',
+    greetingNight: 'Good night.',
+    controlsShow: 'Show controls',
+    controlsHide: 'Hide controls',
+    boardControls: 'Board controls',
+    display: 'Display',
+    weather: 'Weather',
+    dualTime: 'Dual Time',
+    customPlaceholder: 'Enter custom text ...',
+    submit: 'Set',
+    remaining: 'Left',
+    seconds: 'Seconds',
+    sound: 'Sound',
+    alignment: 'Alignment',
+    left: 'Left',
+    center: 'Center',
+    on: 'On',
+    off: 'Off',
+    location: 'Location',
+    place: 'Place',
+    search: 'Search',
+    add: 'Add',
+    current: 'Current',
+    secondPlace: 'Second place',
+    notSet: 'NOT SET',
+    help: 'Help',
+    helpOpen: 'Open help',
+    helpWeatherTitle: 'Weather:',
+    helpWeatherBody: 'Open-Meteo powers weather, place search, and reverse geocoding with Nominatim / OpenStreetMap.',
+    helpFullscreenTitle: 'Fullscreen:',
+    helpFullscreenBody: 'Press F to enter or exit fullscreen mode.',
+    statusBusy: 'Flipping ...',
+    statusReady: 'Ready',
+    presetClock: 'Standard',
+    presetCustom: 'Text',
+    presetClear: 'Clear',
+    locationUnknown: 'UNKNOWN',
+    locationSearchPrefix: 'SEARCH',
+    weatherLoading: 'LOADING...',
+    weatherUnavailable: 'WEATHER N/A',
+    weatherOff: 'WEATHER OFF',
+    weatherLoadingBoard: 'WEATHER LOADS',
+    notFound: 'NOT FOUND',
+    placeNotFoundError: 'Place not found',
+    removeEntry: 'Remove',
+    removeEntryAria: 'Remove {value}',
+  },
 };
 
 const CHARSET_LOOKUP = new Set(FLIPBOARD_CONFIG.charset.split(''));
+
+function detectInitialLanguage() {
+  try {
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (SUPPORTED_LANGUAGES.includes(stored)) {
+      return stored;
+    }
+  } catch (error) {
+    // ignore storage errors
+  }
+
+  const browserLanguages = []
+    .concat(navigator.languages || [])
+    .concat(navigator.language || [])
+    .filter(Boolean)
+    .map(value => String(value).toLowerCase());
+
+  return browserLanguages.some(value => value.startsWith('de')) ? 'de' : 'en';
+}
+
+function setStoredLanguage(language) {
+  try {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch (error) {
+    // ignore storage errors
+  }
+}
+
+function getLocale(language) {
+  return language === 'de' ? 'de-DE' : 'en-US';
+}
+
+function t(language, key, params = {}) {
+  const template = (UI_STRINGS[language] && UI_STRINGS[language][key]) || UI_STRINGS.en[key] || key;
+  return Object.entries(params).reduce(
+    (output, [paramKey, value]) => output.replace(`{${paramKey}}`, value),
+    template
+  );
+}
 
 function el(id) {
   return document.getElementById(id);
@@ -208,7 +394,7 @@ function choosePlaceName(address = {}) {
   );
 }
 
-async function fetchWeatherSummary(lat, lon) {
+async function fetchWeatherSummary(lat, lon, language) {
   const response = await fetch(
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`
   );
@@ -219,13 +405,14 @@ async function fetchWeatherSummary(lat, lon) {
   const data = await response.json();
   const current = data.current || {};
   const temperature = Math.round(current.temperature_2m);
-  const condition = WEATHER_CODES[current.weather_code] || 'UNBEKANNT';
+  const labels = WEATHER_CODES[language] || WEATHER_CODES.en;
+  const condition = labels[current.weather_code] || t(language, 'locationUnknown');
   return `${temperature > 0 ? '+' : ''}${temperature}C ${condition}`;
 }
 
-async function fetchLocationSearch(query) {
+async function fetchLocationSearch(query, language) {
   const response = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=de&format=json`
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=${language}&format=json`
   );
 
   if (!response.ok) {
@@ -234,15 +421,15 @@ async function fetchLocationSearch(query) {
 
   const data = await response.json();
   if (!Array.isArray(data.results) || data.results.length === 0) {
-    throw new Error('Ort nicht gefunden');
+    throw new Error(t(language, 'placeNotFoundError'));
   }
 
   return data.results[0];
 }
 
-async function fetchReverseLocationName(lat, lon) {
+async function fetchReverseLocationName(lat, lon, language) {
   const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=10&addressdetails=1&accept-language=de`
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=10&addressdetails=1&accept-language=${language}`
   );
 
   if (!response.ok) {
@@ -255,6 +442,7 @@ async function fetchReverseLocationName(lat, lon) {
 
 function createAppState(config) {
   return {
+    language: detectInitialLanguage(),
     align: 'center',
     showSeconds: false,
     soundEnabled: true,
@@ -275,16 +463,13 @@ function getDefaultTheme(date = new Date()) {
 
 function createStatusController(config) {
   const dot = el('statusDot');
-  const text = el('statusText');
   const controls = [el('submitBtn'), el('locationBtn'), el('dualLocationBtn')].filter(Boolean);
+  let language = 'en';
   let activeFlips = 0;
 
   function render() {
     if (activeFlips > 0) {
       dot.className = 'status-dot busy';
-      if (text) {
-        text.textContent = 'Flippt ...';
-      }
       controls.forEach(control => {
         control.disabled = true;
       });
@@ -292,9 +477,6 @@ function createStatusController(config) {
     }
 
     dot.className = 'status-dot done';
-    if (text) {
-      text.textContent = 'Bereit';
-    }
     controls.forEach(control => {
       control.disabled = false;
     });
@@ -317,6 +499,10 @@ function createStatusController(config) {
     },
     reset() {
       activeFlips = 0;
+      render();
+    },
+    setLanguage(nextLanguage) {
+      language = nextLanguage;
       render();
     },
   };
@@ -692,14 +878,14 @@ function createWeatherModule(config, state, board) {
   let lat = config.defaultCoords.lat;
   let lon = config.defaultCoords.lon;
   let locationName = config.defaultLocationName;
-  let weatherText = 'LADEN...';
+  let weatherText = t(state.language, 'weatherLoading');
 
   function renderLocationStatus(label) {
     const target = el('weatherLocationValue');
     if (!target) {
       return;
     }
-    target.textContent = normalizeDisplayText(label) || 'UNBEKANNT';
+    target.textContent = normalizeDisplayText(label) || t(state.language, 'locationUnknown');
     target.title = target.textContent;
   }
 
@@ -711,12 +897,12 @@ function createWeatherModule(config, state, board) {
   }
 
   async function fetchWeatherData() {
-    weatherText = await fetchWeatherSummary(lat, lon);
+    weatherText = await fetchWeatherSummary(lat, lon, state.language);
   }
 
   async function resolveLocationName() {
     try {
-      locationName = (await fetchReverseLocationName(lat, lon)) || formatCoordLabel(lat, lon);
+      locationName = (await fetchReverseLocationName(lat, lon, state.language)) || formatCoordLabel(lat, lon);
     } catch (error) {
       locationName = formatCoordLabel(lat, lon);
     }
@@ -761,7 +947,7 @@ function createWeatherModule(config, state, board) {
           renderWeather();
         }
       } catch (error) {
-        weatherText = 'WETTER N/A';
+        weatherText = t(state.language, 'weatherUnavailable');
         if (!showingLocation) {
           renderWeather();
         }
@@ -774,7 +960,7 @@ function createWeatherModule(config, state, board) {
     try {
       await Promise.all([fetchWeatherData(), resolveLocationName()]);
     } catch (error) {
-      weatherText = 'WETTER N/A';
+      weatherText = t(state.language, 'weatherUnavailable');
     }
 
     if (!running || version !== requestVersion) {
@@ -843,10 +1029,10 @@ function createWeatherModule(config, state, board) {
     running = true;
     stopTimers();
     const version = ++requestVersion;
-    renderLocationStatus(`SUCHE ${query}`);
+    renderLocationStatus(`${t(state.language, 'locationSearchPrefix')} ${query}`);
 
     try {
-      const result = await fetchLocationSearch(query);
+      const result = await fetchLocationSearch(query, state.language);
       lat = result.latitude;
       lon = result.longitude;
       locationName = normalizeDisplayText(result.name || query) || formatCoordLabel(lat, lon);
@@ -860,7 +1046,7 @@ function createWeatherModule(config, state, board) {
       startCycle();
     } catch (error) {
       console.warn('Weather lookup failed:', error);
-      weatherText = 'WETTER N/A';
+      weatherText = t(state.language, 'weatherUnavailable');
       renderWeather();
     }
   }
@@ -891,6 +1077,15 @@ function createWeatherModule(config, state, board) {
     setLocation,
     renderLocationStatus,
     syncDisplayMode,
+    async syncLanguage() {
+      renderLocationStatus(locationName);
+      if (!running || !state.weatherEnabled) {
+        weatherText = state.weatherEnabled ? t(state.language, 'weatherLoading') : t(state.language, 'weatherOff');
+        return;
+      }
+      weatherText = t(state.language, 'weatherLoading');
+      await refreshData();
+    },
     get running() {
       return running;
     },
@@ -913,7 +1108,7 @@ function createDualTimeModule(config, state, board, weather) {
     if (!target) {
       return;
     }
-    target.textContent = normalizeDisplayText(label) || 'NICHT GESETZT';
+    target.textContent = normalizeDisplayText(label) || t(state.language, 'notSet');
     target.title = target.textContent;
   }
 
@@ -930,7 +1125,7 @@ function createDualTimeModule(config, state, board, weather) {
   }
 
   function formatParts(date) {
-    const formatter = new Intl.DateTimeFormat('de-DE', {
+    const formatter = new Intl.DateTimeFormat(getLocale(state.language), {
       timeZone,
       weekday: 'short',
       day: '2-digit',
@@ -951,7 +1146,9 @@ function createDualTimeModule(config, state, board, weather) {
 
     return {
       time: `${lookup.hour}:${lookup.minute}`,
-      date: `${normalizeDisplayText(lookup.weekday).slice(0, 2)} ${lookup.day}.${lookup.month}.${lookup.year}`,
+      date: state.language === 'de'
+        ? `${normalizeDisplayText(lookup.weekday).slice(0, 2)} ${lookup.day}.${lookup.month}.${lookup.year}`
+        : `${normalizeDisplayText(lookup.weekday).slice(0, 2)} ${lookup.month}/${lookup.day}/${lookup.year}`,
     };
   }
 
@@ -960,7 +1157,7 @@ function createDualTimeModule(config, state, board, weather) {
       return;
     }
 
-    weatherText = await fetchWeatherSummary(lat, lon);
+    weatherText = await fetchWeatherSummary(lat, lon, state.language);
   }
 
   function renderTime(date = new Date()) {
@@ -972,7 +1169,7 @@ function createDualTimeModule(config, state, board, weather) {
     board.setRows({
       [config.dualRows.time]: `${parts.time} ${locationName}`,
       [config.dualRows.date]: parts.date,
-      [config.dualRows.weather]: weatherText || 'WETTER LAEDT',
+      [config.dualRows.weather]: weatherText || t(state.language, 'weatherLoadingBoard'),
     }, { smart: true });
   }
 
@@ -989,7 +1186,7 @@ function createDualTimeModule(config, state, board, weather) {
 
   async function refreshWeather() {
     if (!state.weatherEnabled) {
-      weatherText = 'WETTER AUS';
+      weatherText = t(state.language, 'weatherOff');
       renderTime();
       return;
     }
@@ -997,7 +1194,7 @@ function createDualTimeModule(config, state, board, weather) {
     try {
       await fetchWeatherData();
     } catch (error) {
-      weatherText = 'WETTER N/A';
+      weatherText = t(state.language, 'weatherUnavailable');
     }
 
     renderTime();
@@ -1039,19 +1236,19 @@ function createDualTimeModule(config, state, board, weather) {
     state.dualTimeEnabled = true;
     renderState();
     weather.syncDisplayMode();
-    renderLocationStatus(`SUCHE ${query}`);
+    renderLocationStatus(`${t(state.language, 'locationSearchPrefix')} ${query}`);
     const version = ++requestVersion;
 
     try {
-      const result = await fetchLocationSearch(query);
+      const result = await fetchLocationSearch(query, state.language);
       lat = result.latitude;
       lon = result.longitude;
       timeZone = result.timezone || 'Europe/Berlin';
       locationName = normalizeDisplayText(result.name || query) || formatCoordLabel(lat, lon);
       if (state.weatherEnabled) {
-        weatherText = await fetchWeatherSummary(lat, lon);
+        weatherText = await fetchWeatherSummary(lat, lon, state.language);
       } else {
-        weatherText = 'WETTER AUS';
+        weatherText = t(state.language, 'weatherOff');
       }
       hasLocation = true;
       renderLocationStatus(locationName);
@@ -1064,7 +1261,7 @@ function createDualTimeModule(config, state, board, weather) {
       start();
     } catch (error) {
       console.warn('Dual time lookup failed:', error);
-      renderLocationStatus('NICHT GEFUNDEN');
+      renderLocationStatus(t(state.language, 'notFound'));
     }
   }
 
@@ -1095,7 +1292,7 @@ function createDualTimeModule(config, state, board, weather) {
       }
 
       if (!state.weatherEnabled) {
-        weatherText = 'WETTER AUS';
+        weatherText = t(state.language, 'weatherOff');
         renderTime();
         return;
       }
@@ -1106,6 +1303,11 @@ function createDualTimeModule(config, state, board, weather) {
       }
     },
     renderState,
+    async syncLanguage() {
+      renderLocationStatus(hasLocation ? locationName : t(state.language, 'notSet'));
+      await this.syncWeatherState();
+      renderTime();
+    },
     get enabled() {
       return state.dualTimeEnabled;
     },
@@ -1128,7 +1330,9 @@ function createClockModule(config, state, board, weather, dualTime) {
   }
 
   function formatDate(date) {
-    return `${DAY_NAMES[date.getDay()]} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+    return state.language === 'de'
+      ? `${DAY_NAMES[state.language][date.getDay()]} ${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`
+      : `${DAY_NAMES[state.language][date.getDay()]} ${pad(date.getMonth() + 1)}/${pad(date.getDate())}/${date.getFullYear()}`;
   }
 
   function tick() {
@@ -1237,7 +1441,7 @@ function createPresetController(config, state, board, clock) {
     config.presets.forEach(preset => {
       const button = document.createElement('button');
       button.className = 'ctrl-btn';
-      button.textContent = preset.label;
+      button.textContent = t(state.language, preset.labelKey);
       button.dataset.action = preset.action;
       button.addEventListener('click', () => {
         runPreset(preset.action);
@@ -1249,6 +1453,14 @@ function createPresetController(config, state, board, clock) {
 
   return {
     init,
+    renderLabels() {
+      config.presets.forEach(preset => {
+        const button = buttons.get(preset.action);
+        if (button) {
+          button.textContent = t(state.language, preset.labelKey);
+        }
+      });
+    },
     runPreset,
     markPreset,
     setOnChange(handler) {
@@ -1264,8 +1476,8 @@ function createThemeController(state) {
     document.documentElement.classList.toggle('light', isLight);
     if (button) {
       button.textContent = isLight ? '\u2600' : '\u263D';
-      button.setAttribute('aria-label', isLight ? 'Light Mode aktiv' : 'Dark Mode aktiv');
-      button.setAttribute('title', isLight ? 'Light Mode aktiv' : 'Dark Mode aktiv');
+      button.setAttribute('aria-label', isLight ? t(state.language, 'themeLight') : t(state.language, 'themeDark'));
+      button.setAttribute('title', isLight ? t(state.language, 'themeLight') : t(state.language, 'themeDark'));
     }
   }
 
@@ -1278,18 +1490,18 @@ function createThemeController(state) {
   };
 }
 
-function createGreetingController() {
+function createGreetingController(state) {
   function getGreeting(hour) {
     if (hour >= 5 && hour < 11) {
-      return 'Guten Morgen.';
+      return t(state.language, 'greetingMorning');
     }
     if (hour >= 11 && hour < 17) {
-      return 'Guten Mittag.';
+      return t(state.language, 'greetingNoon');
     }
     if (hour >= 17 && hour < 22) {
-      return 'Guten Abend.';
+      return t(state.language, 'greetingEvening');
     }
-    return 'Gute Nacht.';
+    return t(state.language, 'greetingNight');
   }
 
   return {
@@ -1532,7 +1744,7 @@ function createHistoryStore() {
   };
 }
 
-function createHistoryController(store) {
+function createHistoryController(store, state) {
   const bindings = {
     custom: { containerId: 'customHistory', inputId: 'customInput' },
     dual: { containerId: 'dualHistory', inputId: 'dualLocationInput' },
@@ -1559,8 +1771,8 @@ function createHistoryController(store) {
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'history-chip-delete';
-      removeButton.setAttribute('aria-label', `${entry} entfernen`);
-      removeButton.title = 'Entfernen';
+      removeButton.setAttribute('aria-label', t(state.language, 'removeEntryAria', { value: entry }));
+      removeButton.title = t(state.language, 'removeEntry');
 
       const removeShadow = document.createElement('span');
       removeShadow.className = 'history-chip-delete-shadow';
@@ -1568,7 +1780,7 @@ function createHistoryController(store) {
 
       const removeIcon = document.createElement('span');
       removeIcon.className = 'history-chip-delete-icon';
-      removeIcon.textContent = '✕';
+      removeIcon.textContent = 'x';
       removeButton.appendChild(removeIcon);
 
       removeButton.addEventListener('click', event => {
@@ -1609,13 +1821,13 @@ function createApp(config) {
   const clock = createClockModule(config, state, board, weather, dualTime);
   const presets = createPresetController(config, state, board, clock);
   const theme = createThemeController(state);
-  const greeting = createGreetingController();
+  const greeting = createGreetingController(state);
   const controlsOverlay = createControlsOverlayController(state);
   const help = createHelpController();
   const fullscreen = createFullscreenController();
   const oledProtection = createOledProtectionController();
   const historyStore = createHistoryStore();
-  const history = createHistoryController(historyStore);
+  const history = createHistoryController(historyStore, state);
 
   async function refreshCurrentView() {
     if (state.activePreset === 'custom' && state.customText) {
@@ -1633,7 +1845,107 @@ function createApp(config) {
       return;
     }
 
-    meta.textContent = `Rest: ${getRemainingBoardChars(input.value, state.cols, config.rows.length)}`;
+    meta.textContent = `${t(state.language, 'remaining')}: ${getRemainingBoardChars(input.value, state.cols, config.rows.length)}`;
+  }
+
+  function setTextContent(id, value) {
+    const target = el(id);
+    if (target) {
+      target.textContent = value;
+    }
+  }
+
+  function setInputPlaceholder(id, value) {
+    const target = el(id);
+    if (target) {
+      target.setAttribute('placeholder', value);
+    }
+  }
+
+  function renderLanguageUi() {
+    document.documentElement.lang = state.language;
+    document.title = t(state.language, 'appTitle');
+    const nextLanguage = state.language === 'de' ? 'en' : 'de';
+    setTextContent('headerNavCopy', t(state.language, 'headerTagline'));
+    setTextContent('languageBtn', nextLanguage.toUpperCase());
+    setTextContent('boardControlsTitle', t(state.language, 'boardControls'));
+    setTextContent('displayTitle', t(state.language, 'display'));
+    setTextContent('weatherTitle', t(state.language, 'weather'));
+    setTextContent('dualTimeTitle', t(state.language, 'dualTime'));
+    setTextContent('secondsLabel', t(state.language, 'seconds'));
+    setTextContent('soundLabel', t(state.language, 'sound'));
+    setTextContent('alignmentLabel', t(state.language, 'alignment'));
+    setTextContent('weatherToggleLabel', t(state.language, 'weather'));
+    setTextContent('locationLabel', t(state.language, 'location'));
+    setTextContent('weatherLocationChipLabel', t(state.language, 'current'));
+    setTextContent('dualTimeToggleLabel', t(state.language, 'dualTime'));
+    setTextContent('placeLabel', t(state.language, 'place'));
+    setTextContent('dualLocationChipLabel', t(state.language, 'secondPlace'));
+    setTextContent('submitBtn', t(state.language, 'submit'));
+    setTextContent('locationBtn', t(state.language, 'search'));
+    setTextContent('dualLocationBtn', t(state.language, 'add'));
+    setTextContent('secOn', t(state.language, 'on'));
+    setTextContent('secOff', t(state.language, 'off'));
+    setTextContent('soundOn', t(state.language, 'on'));
+    setTextContent('soundOff', t(state.language, 'off'));
+    setTextContent('alignLeft', t(state.language, 'left'));
+    setTextContent('alignCenter', t(state.language, 'center'));
+    setTextContent('weatherOn', t(state.language, 'on'));
+    setTextContent('weatherOff', t(state.language, 'off'));
+    setTextContent('dualOn', t(state.language, 'on'));
+    setTextContent('dualOff', t(state.language, 'off'));
+    setTextContent('helpTitle', t(state.language, 'help'));
+    setTextContent('helpWeatherTitle', t(state.language, 'helpWeatherTitle'));
+    setTextContent('helpWeatherBody', t(state.language, 'helpWeatherBody'));
+    setTextContent('helpFullscreenTitle', t(state.language, 'helpFullscreenTitle'));
+    setTextContent('helpFullscreenBody', t(state.language, 'helpFullscreenBody'));
+    setInputPlaceholder('customInput', t(state.language, 'customPlaceholder'));
+    setInputPlaceholder(
+      'locationInput',
+      state.language === 'de' ? 'z.B. Berlin, Paris, Tokyo ...' : 'e.g. Berlin, Paris, Tokyo ...'
+    );
+    setInputPlaceholder(
+      'dualLocationInput',
+      state.language === 'de' ? 'z.B. New York, Tokyo, Sydney ...' : 'e.g. New York, Tokyo, Sydney ...'
+    );
+
+    const languageButton = el('languageBtn');
+    if (languageButton) {
+      languageButton.setAttribute('aria-label', nextLanguage === 'de' ? 'Sprache auf Deutsch stellen' : 'Switch language to English');
+      languageButton.setAttribute('title', nextLanguage === 'de' ? 'Sprache auf Deutsch stellen' : 'Switch language to English');
+    }
+
+    const controlsToggle = el('controlsToggle');
+    if (controlsToggle) {
+      controlsToggle.setAttribute('title', t(state.language, 'controlsShow'));
+    }
+
+    const controlsCollapse = el('controlsCollapse');
+    if (controlsCollapse) {
+      controlsCollapse.setAttribute('aria-label', t(state.language, 'controlsHide'));
+      controlsCollapse.setAttribute('title', t(state.language, 'controlsHide'));
+    }
+
+    const helpFab = el('helpFab');
+    if (helpFab) {
+      helpFab.setAttribute('aria-label', t(state.language, 'helpOpen'));
+      helpFab.setAttribute('title', t(state.language, 'help'));
+    }
+
+    presets.renderLabels();
+  }
+
+  async function applyLanguage(language) {
+    state.language = language;
+    setStoredLanguage(language);
+    status.setLanguage(language);
+    renderUiState();
+    renderLanguageUi();
+    await weather.syncLanguage();
+    await dualTime.syncLanguage();
+    await refreshCurrentView();
+    history.render('custom', submitCustomTextFromHistory);
+    history.render('dual', runDualLocationSearchFromHistory);
   }
 
   function renderUiState() {
@@ -1647,6 +1959,9 @@ function createApp(config) {
     controlsOverlay.render();
     help.render();
   }
+
+  let runDualLocationSearchFromHistory = async () => {};
+  let submitCustomTextFromHistory = async () => {};
 
   function bindEvents() {
     const enforceCustomInputLimit = input => {
@@ -1711,6 +2026,9 @@ function createApp(config) {
       }
     });
 
+    el('languageBtn').addEventListener('click', async () => {
+      await applyLanguage(state.language === 'de' ? 'en' : 'de');
+    });
     el('themeBtn').addEventListener('click', () => theme.toggle());
     el('controlsToggle').addEventListener('click', () => controlsOverlay.toggle());
     el('controlsCollapse').addEventListener('click', () => controlsOverlay.close());
@@ -1803,7 +2121,7 @@ function createApp(config) {
       el('dualLocationInput').blur();
     };
 
-    const runDualLocationSearchFromHistory = async value => {
+    runDualLocationSearchFromHistory = async value => {
       if (!value) {
         return;
       }
@@ -1834,7 +2152,7 @@ function createApp(config) {
       updateCustomInputMeta();
     };
 
-    const submitCustomTextFromHistory = async value => {
+    submitCustomTextFromHistory = async value => {
       if (!value) {
         return;
       }
@@ -1901,7 +2219,7 @@ function createApp(config) {
       dualTime.renderState();
     });
     weather.renderLocationStatus(config.defaultLocationName);
-    dualTime.renderLocationStatus('NICHT GESETZT');
+    dualTime.renderLocationStatus(t(state.language, 'notSet'));
     history.render('custom', async value => {
       clock.stop();
       await board.setAllText(value);
@@ -1910,7 +2228,9 @@ function createApp(config) {
     history.render('dual', async value => {
       await dualTime.setLocation(value);
     });
+    status.setLanguage(state.language);
     renderUiState();
+    renderLanguageUi();
     updateCustomInputMeta();
     bindEvents();
     exposeApi();
@@ -1926,3 +2246,4 @@ function createApp(config) {
 document.addEventListener('DOMContentLoaded', () => {
   createApp(FLIPBOARD_CONFIG).boot();
 });
+

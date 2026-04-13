@@ -1,15 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#111111">
-<title>Split-Flap Board</title>
-<script>
-if (new URLSearchParams(window.location.search).get('screensaver') === '1') {
-  document.documentElement.classList.add('screensaver-mode');
-}
-</script>
+<title>Daily Hub Board</title>
 <style>
 :root {
   --bg: #ececec;
@@ -100,12 +95,6 @@ body {
   padding: 24px;
 }
 
-html.screensaver-mode body {
-  padding: 0;
-  overflow: hidden;
-  background: #050505;
-}
-
 button,
 input {
   font: inherit;
@@ -131,16 +120,6 @@ button {
   overflow: hidden;
 }
 
-html.screensaver-mode .page-frame {
-  width: 100vw;
-  max-width: none;
-  min-height: 100vh;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
 .header {
   display: flex;
   align-items: center;
@@ -149,11 +128,6 @@ html.screensaver-mode .page-frame {
   padding: 20px 32px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
-}
-
-html.screensaver-mode .header,
-html.screensaver-mode .controls-overlay {
-  display: none !important;
 }
 
 .header-logo {
@@ -290,17 +264,6 @@ html.screensaver-mode .controls-overlay {
   padding: 18px 18px 18px;
 }
 
-html.screensaver-mode .board-section {
-  --tile-w: min(calc((100vw - 220px) / 23.4), calc((100vh - 220px) / 9.25), 70px);
-  --tile-h: calc(var(--tile-w) * 1.4);
-  --tile-gap: max(2px, min(calc(var(--tile-w) * 0.07), 5px));
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-}
-
 .board-motion {
   width: fit-content;
   transform: translate3d(var(--burn-x), var(--burn-y), 0);
@@ -348,11 +311,6 @@ html.screensaver-mode .board-section {
     inset 0 -2px 4px rgba(10, 33, 61, 0.26),
     0 4px 10px var(--ui-accent-shadow);
   transition: transform .12s ease, background .22s ease, border-color .22s ease, box-shadow .12s ease;
-}
-
-html.screensaver-mode .controls-toggle {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .controls-toggle::before {
@@ -1205,7 +1163,7 @@ html:not(.light) .location-chip {
       <div class="header-logo" id="greetingTitle">Guten Morgen.</div>
       <div class="header-nav">
         <span class="header-nav-copy">Retro Split-Flap Dashboard</span>
-        <button class="theme-btn" id="themeBtn" aria-label="Dark Mode aktiv" title="Dark Mode aktiv">☽</button>
+        <button class="theme-btn" id="themeBtn" aria-label="Dark Mode aktiv" title="Dark Mode aktiv">&#9789;</button>
       </div>
     </header>
     <section class="board-section" id="boardSection">
@@ -1306,7 +1264,7 @@ html:not(.light) .location-chip {
                   <div class="panel-row input-row">
                     <span class="panel-label">Ort</span>
                     <input class="text-input" id="dualLocationInput" type="text" maxlength="60" placeholder="z.B. New York, Tokyo, Sydney ...">
-                    <button class="submit-btn" id="dualLocationBtn">Hinzufuegen</button>
+                    <button class="submit-btn" id="dualLocationBtn">Hinzufügen</button>
                   </div>
                   <div class="panel-row panel-row-offset">
                     <div class="location-chip" id="dualLocationStatus" aria-live="polite">
@@ -1319,7 +1277,7 @@ html:not(.light) .location-chip {
               </article>
             </div>
             <div class="controls-footer">
-              <button class="controls-collapse" id="controlsCollapse" type="button" aria-label="Steuerung schliessen"></button>
+              <button class="controls-collapse" id="controlsCollapse" type="button" aria-label="Steuerung schließen"></button>
             </div>
           </div>
         </div>
@@ -1336,3 +1294,4 @@ html:not(.light) .location-chip {
   <script src="./flipboard-app.js"></script>
 </body>
 </html>
+

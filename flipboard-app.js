@@ -411,8 +411,16 @@ async function fetchWeatherSummary(lat, lon, language) {
 }
 
 async function fetchLocationSearch(query, language) {
+  const results = await fetchLocationSuggestions(query, language, 1);
+  if (!results.length) {
+    throw new Error(t(language, 'placeNotFoundError'));
+  }
+  return results[0];
+}
+
+async function fetchLocationSuggestions(query, language, count = 5) {
   const response = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=${language}&format=json`
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=${count}&language=${language}&format=json`
   );
 
   if (!response.ok) {
@@ -420,11 +428,7 @@ async function fetchLocationSearch(query, language) {
   }
 
   const data = await response.json();
-  if (!Array.isArray(data.results) || data.results.length === 0) {
-    throw new Error(t(language, 'placeNotFoundError'));
-  }
-
-  return data.results[0];
+  return Array.isArray(data.results) ? data.results : [];
 }
 
 async function fetchReverseLocationName(lat, lon, language) {
@@ -454,6 +458,19 @@ function createAppState(config) {
     customText: '',
     cols: config.rows[0].cols,
   };
+}
+
+function formatLocationSuggestion(result, language) {
+  const parts = [
+    result.name,
+    result.admin1,
+    result.country,
+  ]
+    .map(value => String(value || '').trim())
+    .filter(Boolean);
+
+  const label = parts.join(', ');
+  return label || (language === 'de' ? 'Unbekannter Ort' : 'Unknown place');
 }
 
 function getDefaultTheme(date = new Date()) {
@@ -1017,7 +1034,11 @@ function createWeatherModule(config, state, board) {
     }
   }
 
-  async function setLocation(query) {
+  async function setLocation(nextLocation) {
+    const query = typeof nextLocation === 'string'
+      ? nextLocation
+      : formatLocationSuggestion(nextLocation, state.language);
+
     if (!normalizeDisplayText(query)) {
       return;
     }
@@ -1032,7 +1053,9 @@ function createWeatherModule(config, state, board) {
     renderLocationStatus(`${t(state.language, 'locationSearchPrefix')} ${query}`);
 
     try {
-      const result = await fetchLocationSearch(query, state.language);
+      const result = typeof nextLocation === 'string'
+        ? await fetchLocationSearch(query, state.language)
+        : nextLocation;
       lat = result.latitude;
       lon = result.longitude;
       locationName = normalizeDisplayText(result.name || query) || formatCoordLabel(lat, lon);
@@ -1228,7 +1251,11 @@ function createDualTimeModule(config, state, board, weather) {
     renderTime();
   }
 
-  async function setLocation(query) {
+  async function setLocation(nextLocation) {
+    const query = typeof nextLocation === 'string'
+      ? nextLocation
+      : formatLocationSuggestion(nextLocation, state.language);
+
     if (!normalizeDisplayText(query)) {
       return;
     }
@@ -1240,7 +1267,9 @@ function createDualTimeModule(config, state, board, weather) {
     const version = ++requestVersion;
 
     try {
-      const result = await fetchLocationSearch(query, state.language);
+      const result = typeof nextLocation === 'string'
+        ? await fetchLocationSearch(query, state.language)
+        : nextLocation;
       lat = result.latitude;
       lon = result.longitude;
       timeZone = result.timezone || 'Europe/Berlin';
@@ -1811,6 +1840,193 @@ function createHistoryController(store, state) {
   };
 }
 
+function createLocationSuggestionController(state) {
+  const bindings = new Map();
+
+  function getBinding(inputId) {
+    return bindings.get(inputId) || null;
+  }
+
+  function close(inputId) {
+    const binding = getBinding(inputId);
+    if (!binding) {
+      return;
+    }
+
+    binding.items = [];
+    binding.highlightedIndex = -1;
+    binding.requestVersion += 1;
+    binding.wrap.innerHTML = '';
+    binding.wrap.hidden = true;
+  }
+
+  function closeAll() {
+    bindings.forEach((_, inputId) => close(inputId));
+  }
+
+  function render(binding) {
+    binding.wrap.innerHTML = '';
+
+    if (!binding.items.length) {
+      binding.wrap.hidden = true;
+      return;
+    }
+
+    binding.items.forEach((item, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'suggestion-item';
+      button.classList.toggle('active', index === binding.highlightedIndex);
+
+      const primary = document.createElement('span');
+      primary.className = 'suggestion-primary';
+      primary.textContent = String(item.name || '').trim() || formatLocationSuggestion(item, state.language);
+
+      const secondary = document.createElement('span');
+      secondary.className = 'suggestion-secondary';
+      secondary.textContent = formatLocationSuggestion(item, state.language);
+
+      button.append(primary, secondary);
+      button.addEventListener('mousedown', event => {
+        event.preventDefault();
+      });
+      button.addEventListener('click', async () => {
+        binding.input.value = formatLocationSuggestion(item, state.language);
+        close(binding.input.id);
+        await binding.onSelect(item);
+      });
+      binding.wrap.appendChild(button);
+    });
+
+    binding.wrap.hidden = false;
+  }
+
+  async function loadSuggestions(binding) {
+    const query = binding.input.value.trim();
+    if (query.length < 2) {
+      close(binding.input.id);
+      return;
+    }
+
+    const requestVersion = ++binding.requestVersion;
+
+    try {
+      const results = await fetchLocationSuggestions(query, state.language, 5);
+      if (requestVersion !== binding.requestVersion) {
+        return;
+      }
+
+      binding.items = results;
+      binding.highlightedIndex = results.length ? 0 : -1;
+      render(binding);
+    } catch (error) {
+      if (requestVersion !== binding.requestVersion) {
+        return;
+      }
+      binding.items = [];
+      binding.highlightedIndex = -1;
+      render(binding);
+    }
+  }
+
+  function scheduleLoad(binding) {
+    window.clearTimeout(binding.timerId);
+    binding.timerId = window.setTimeout(() => {
+      loadSuggestions(binding);
+    }, 180);
+  }
+
+  function register({ inputId, listId, onSelect }) {
+    const input = el(inputId);
+    const wrap = el(listId);
+    if (!input || !wrap) {
+      return;
+    }
+
+    const binding = {
+      input,
+      wrap,
+      onSelect,
+      items: [],
+      highlightedIndex: -1,
+      requestVersion: 0,
+      timerId: 0,
+    };
+
+    bindings.set(inputId, binding);
+
+    input.addEventListener('input', () => {
+      scheduleLoad(binding);
+    });
+
+    input.addEventListener('focus', () => {
+      if (binding.input.value.trim().length >= 2) {
+        scheduleLoad(binding);
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      window.setTimeout(() => close(inputId), 120);
+    });
+  }
+
+  function handleKeydown(inputId, event) {
+    const binding = getBinding(inputId);
+    if (!binding || binding.wrap.hidden || !binding.items.length) {
+      return false;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      binding.highlightedIndex = (binding.highlightedIndex + 1) % binding.items.length;
+      render(binding);
+      return true;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      binding.highlightedIndex = binding.highlightedIndex <= 0 ? binding.items.length - 1 : binding.highlightedIndex - 1;
+      render(binding);
+      return true;
+    }
+
+    if (event.key === 'Escape') {
+      close(inputId);
+      return true;
+    }
+
+    if (event.key === 'Enter' && binding.highlightedIndex >= 0) {
+      event.preventDefault();
+      const item = binding.items[binding.highlightedIndex];
+      if (!item) {
+        return true;
+      }
+      binding.input.value = formatLocationSuggestion(item, state.language);
+      close(inputId);
+      binding.onSelect(item);
+      return true;
+    }
+
+    return false;
+  }
+
+  function syncLanguage() {
+    bindings.forEach(binding => {
+      if (binding.items.length) {
+        render(binding);
+      }
+    });
+  }
+
+  return {
+    register,
+    handleKeydown,
+    close,
+    closeAll,
+    syncLanguage,
+  };
+}
+
 function createApp(config) {
   const state = createAppState(config);
   const status = createStatusController(config);
@@ -1828,6 +2044,7 @@ function createApp(config) {
   const oledProtection = createOledProtectionController();
   const historyStore = createHistoryStore();
   const history = createHistoryController(historyStore, state);
+  const locationSuggestions = createLocationSuggestionController(state);
 
   async function refreshCurrentView() {
     if (state.activePreset === 'custom' && state.customText) {
@@ -1941,6 +2158,7 @@ function createApp(config) {
     status.setLanguage(language);
     renderUiState();
     renderLanguageUi();
+    locationSuggestions.syncLanguage();
     await weather.syncLanguage();
     await dualTime.syncLanguage();
     await refreshCurrentView();
@@ -2025,6 +2243,11 @@ function createApp(config) {
         help.close();
       }
     });
+    document.addEventListener('pointerdown', event => {
+      if (!(event.target instanceof HTMLElement) || !event.target.closest('.suggestion-wrap')) {
+        locationSuggestions.closeAll();
+      }
+    });
 
     el('languageBtn').addEventListener('click', async () => {
       await applyLanguage(state.language === 'de' ? 'en' : 'de');
@@ -2099,12 +2322,25 @@ function createApp(config) {
         return;
       }
       await weather.setLocation(value);
+      locationSuggestions.close('locationInput');
       el('locationInput').value = '';
       el('locationInput').blur();
     };
 
     el('locationBtn').addEventListener('click', runLocationSearch);
+    locationSuggestions.register({
+      inputId: 'locationInput',
+      listId: 'locationSuggestions',
+      onSelect: async result => {
+        await weather.setLocation(result);
+        el('locationInput').value = '';
+        el('locationInput').blur();
+      },
+    });
     el('locationInput').addEventListener('keydown', event => {
+      if (locationSuggestions.handleKeydown('locationInput', event)) {
+        return;
+      }
       if (event.key === 'Enter') {
         runLocationSearch();
       }
@@ -2116,6 +2352,7 @@ function createApp(config) {
         return;
       }
       await dualTime.setLocation(value);
+      locationSuggestions.close('dualLocationInput');
       history.save('dual', value, runDualLocationSearchFromHistory);
       el('dualLocationInput').value = '';
       el('dualLocationInput').blur();
@@ -2129,7 +2366,21 @@ function createApp(config) {
     };
 
     el('dualLocationBtn').addEventListener('click', runDualLocationSearch);
+    locationSuggestions.register({
+      inputId: 'dualLocationInput',
+      listId: 'dualLocationSuggestions',
+      onSelect: async result => {
+        const label = formatLocationSuggestion(result, state.language);
+        await dualTime.setLocation(result);
+        history.save('dual', label, runDualLocationSearchFromHistory);
+        el('dualLocationInput').value = '';
+        el('dualLocationInput').blur();
+      },
+    });
     el('dualLocationInput').addEventListener('keydown', event => {
+      if (locationSuggestions.handleKeydown('dualLocationInput', event)) {
+        return;
+      }
       if (event.key === 'Enter') {
         runDualLocationSearch();
       }
